@@ -503,19 +503,18 @@ contract TestCoin is Context, IERC20, Ownable {
 
     constructor () {
         _NAME = "TestCoin";
-		_SYMBOL = "TestCoin";
+        _SYMBOL = "TestCoin";
         _SUPPLY = 1000000;
-		_DECIMALS = 9;
-		_DECIMALFACTOR = 10 ** uint256(_DECIMALS);
-		_tTotal = _SUPPLY * _DECIMALFACTOR;
-		_rTotal = (_MAX - (_MAX % _tTotal));
-		_TAX_FEE = 5 * 100;
+        _DECIMALS = 9;
+        _DECIMALFACTOR = 10 ** uint256(_DECIMALS);
+        _tTotal = _SUPPLY * _DECIMALFACTOR;
+        _rTotal = (_MAX - (_MAX % _tTotal));
+        _TAX_FEE = 5 * 100;
         _BURN_FEE = 5 * 100;
-		ORIG_TAX_FEE = _TAX_FEE;
-		ORIG_BURN_FEE = _BURN_FEE; 
-		_owner = 0x0000; // TODO: Replace with owner address.
+        ORIG_TAX_FEE = _TAX_FEE;
+        ORIG_BURN_FEE = _BURN_FEE; 
+        _owner = 0x0000; // TODO: Replace with owner address.
         _rOwned[_msgSender()] = _rTotal; // TODO: Consider _rOwned[tokenOwner] = _rTotal;
-		
         emit Transfer(address(0), _msgSender(), _tTotal);
     }
 
