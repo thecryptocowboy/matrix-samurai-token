@@ -1,10 +1,30 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+//  _____ ______   ________  _________  ________  ___     ___    ___         
+// |\   _ \  _   \|\   __  \|\___   ___\\   __  \|\  \   |\  \  /  /|        
+// \ \  \\\__\ \  \ \  \|\  \|___ \  \_\ \  \|\  \ \  \  \ \  \/  / /        
+//  \ \  \\|__| \  \ \   __  \   \ \  \ \ \   _  _\ \  \  \ \    / /         
+//   \ \  \    \ \  \ \  \ \  \   \ \  \ \ \  \\  \\ \  \  /     \/          
+//    \ \__\    \ \__\ \__\ \__\   \ \__\ \ \__\\ _\\ \__\/  /\   \          
+//     \|__|     \|__|\|__|\|__|    \|__|  \|__|\|__|\|__/__/ /\ __\         
+//                                                       |__|/ \|__|         
+                                                                          
+                                                                          
+//  ________  ________  _____ ______   ___  ___  ________  ________  ___     
+// |\   ____\|\   __  \|\   _ \  _   \|\  \|\  \|\   __  \|\   __  \|\  \    
+// \ \  \___|\ \  \|\  \ \  \\\__\ \  \ \  \\\  \ \  \|\  \ \  \|\  \ \  \   
+//  \ \_____  \ \   __  \ \  \\|__| \  \ \  \\\  \ \   _  _\ \   __  \ \  \  
+//   \|____|\  \ \  \ \  \ \  \    \ \  \ \  \\\  \ \  \\  \\ \  \ \  \ \  \ 
+//     ____\_\  \ \__\ \__\ \__\    \ \__\ \_______\ \__\\ _\\ \__\ \__\ \__\
+//    |\_________\|__|\|__|\|__|     \|__|\|_______|\|__|\|__|\|__|\|__|\|__|
+//    \|_________|                                                           
+                           
+pragma solidity ^0.8.2;
+
 
 abstract contract Context {
     function _msgSender() internal view virtual returns (address payable) {
-        return msg.sender;
+        return payable(msg.sender);
     }
 
     function _msgData() internal view virtual returns (bytes memory) {
@@ -13,6 +33,9 @@ abstract contract Context {
     }
 }
 
+/**
+ * @dev Interface of the IERC20 standard as defined in the EIP.
+ */
 interface IERC20 {
     /**
      * @dev Returns the amount of tokens in existence.
@@ -84,6 +107,19 @@ interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
+/**
+ * @dev Wrappers over Solidity's arithmetic operations with added overflow
+ * checks.
+ *
+ * Arithmetic operations in Solidity wrap on overflow. This can easily result
+ * in bugs, because programmers usually assume that an overflow raises an
+ * error, which is the standard behavior in high level programming languages.
+ * `SafeMath` restores this intuition by reverting the transaction when an
+ * operation overflows.
+ *
+ * Using this library instead of the unchecked operations eliminates an entire
+ * class of bugs, so it's recommended to use it always.
+ */
 library SafeMath {
     /**
      * @dev Returns the addition of two unsigned integers, reverting on
@@ -227,6 +263,9 @@ library SafeMath {
     }
 }
 
+/**
+ * @dev Collection of functions related to the address type
+ */
 library Address {
     /**
      * @dev Returns true if `account` is a contract.
@@ -338,7 +377,7 @@ library Address {
         return _functionCallWithValue(target, data, value, errorMessage);
     }
 
-    function _functionCallWithValue(address target, bytes memory data, uint256 weiValue, string memory errorMessage) public returns (bytes memory) {
+    function _functionCallWithValue(address target, bytes memory data, uint256 weiValue, string memory errorMessage) private returns (bytes memory) {
         require(isContract(target), "Address: call to non-contract");
 
         // solhint-disable-next-line avoid-low-level-calls
@@ -362,6 +401,18 @@ library Address {
     }
 }
 
+/**
+ * @dev Contract module which provides a basic access control mechanism, where
+ * there is an account (an owner) that can be granted exclusive access to
+ * specific functions.
+ *
+ * By default, the owner account will be the one that deploys the contract. This
+ * can later be changed with {transferOwnership}.
+ *
+ * This module is used through inheritance. It will make available the modifier
+ * `onlyOwner`, which can be applied to your functions to restrict their use to
+ * the owner.
+ */
 contract Ownable is Context {
     address public _owner;
 
@@ -370,7 +421,7 @@ contract Ownable is Context {
     /**
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
-    constructor () internal {
+    constructor () {
         address msgSender = _msgSender();
         _owner = msgSender;
         emit OwnershipTransferred(address(0), msgSender);
@@ -416,7 +467,7 @@ contract Ownable is Context {
 
 
 
-contract WealthInu is Context, IERC20, Ownable {
+contract TestCoin is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
 
@@ -426,33 +477,58 @@ contract WealthInu is Context, IERC20, Ownable {
 
     mapping (address => bool) public _isExcluded;
     address[] public _excluded;
-   
-    uint256 public constant MAX = ~uint256(0);
-    uint256 public constant _tTotal = 100000000000 * 10**6 * 10**9;
-    uint256 public _rTotal = (MAX - (MAX % _tTotal));
+
+    string public _NAME;
+    string public _SYMBOL;
+    uint256 public _DECIMALS;
+
+    uint256 public _MAX = ~uint256(0);
+    uint256 public _DECIMALFACTOR;
+    uint256 public _GRANULARITY = 100;
+
+    uint256 public _tTotal;
+    uint256 public _rTotal;
+
     uint256 public _tFeeTotal;
+    uint256 public _tBurnTotal;
 
-    string public _name = 'Wealth Inu';
-    string public _symbol = 'WINU';
-    uint8 public _decimals = 9;
-    
-    uint256 public _maxTxAmount = 100000000 * 10**6 * 10**9;
+    uint256 public _TAX_FEE;
+    uint256 public _BURN_FEE;
 
-    constructor () public {
-        _rOwned[_msgSender()] = _rTotal;
+    // Track original fees to bypass fees for excluded accounts (not currently implemented)
+    uint256 public ORIG_TAX_FEE;
+    uint256 public ORIG_BURN_FEE;
+
+    uint256 public _SUPPLY;
+
+    constructor () {
+        _NAME = "TestCoin";
+		_SYMBOL = "TestCoin";
+        _SUPPLY = 1000000;
+		_DECIMALS = 9;
+		_DECIMALFACTOR = 10 ** uint256(_DECIMALS);
+		_tTotal = _SUPPLY * _DECIMALFACTOR;
+		_rTotal = (_MAX - (_MAX % _tTotal));
+		_TAX_FEE = 5 * 100;
+        _BURN_FEE = 5 * 100;
+		ORIG_TAX_FEE = _TAX_FEE;
+		ORIG_BURN_FEE = _BURN_FEE; 
+		_owner = 0x0000; // TODO: Replace with owner address.
+        _rOwned[_msgSender()] = _rTotal; // TODO: Consider _rOwned[tokenOwner] = _rTotal;
+		
         emit Transfer(address(0), _msgSender(), _tTotal);
     }
 
     function name() public view returns (string memory) {
-        return _name;
+        return _NAME;
     }
 
     function symbol() public view returns (string memory) {
-        return _symbol;
+        return _SYMBOL;
     }
 
-    function decimals() public view returns (uint8) {
-        return _decimals;
+    function decimals() public view returns (uint256) {
+        return _DECIMALS;
     }
 
     function totalSupply() public view override returns (uint256) {
@@ -502,17 +578,14 @@ contract WealthInu is Context, IERC20, Ownable {
         return _tFeeTotal;
     }
     
-    
-    function setMaxTxPercent(uint256 maxTxPercent) external onlyOwner() {
-        _maxTxAmount = _tTotal.mul(maxTxPercent).div(
-            10**2
-        );
+    function totalBurn() public view returns (uint256) {
+        return _tBurnTotal;
     }
 
     function reflect(uint256 tAmount) public {
         address sender = _msgSender();
         require(!_isExcluded[sender], "Excluded addresses cannot call this function");
-        (uint256 rAmount,,,,) = _getValues(tAmount);
+        (uint256 rAmount,,,,,) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rTotal = _rTotal.sub(rAmount);
         _tFeeTotal = _tFeeTotal.add(tAmount);
@@ -521,10 +594,10 @@ contract WealthInu is Context, IERC20, Ownable {
     function reflectionFromToken(uint256 tAmount, bool deductTransferFee) public view returns(uint256) {
         require(tAmount <= _tTotal, "Amount must be less than supply");
         if (!deductTransferFee) {
-            (uint256 rAmount,,,,) = _getValues(tAmount);
+            (uint256 rAmount,,,,,) = _getValues(tAmount);
             return rAmount;
         } else {
-            (,uint256 rTransferAmount,,,) = _getValues(tAmount);
+            (,uint256 rTransferAmount,,,,) = _getValues(tAmount);
             return rTransferAmount;
         }
     }
@@ -557,7 +630,32 @@ contract WealthInu is Context, IERC20, Ownable {
         }
     }
 
-    function _approve(address owner, address spender, uint256 amount) public {
+	function burn(uint256 _value) public{
+		_burn(msg.sender, _value);
+	}
+	
+	function updateFee(uint256 _txFee,uint256 _burnFee) onlyOwner() public{
+        _TAX_FEE = _txFee* 100; 
+        _BURN_FEE = _burnFee * 100;
+		ORIG_TAX_FEE = _TAX_FEE;
+		ORIG_BURN_FEE = _BURN_FEE;
+	}
+
+	function _burn(address _who, uint256 _value) internal {
+		require(_value <= _rOwned[_who]);
+		_rOwned[_who] = _rOwned[_who].sub(_value);
+		_tTotal = _tTotal.sub(_value);
+		emit Transfer(_who, address(0), _value);
+	}
+
+    function mint(address account, uint256 amount) onlyOwner() public {
+
+        _tTotal = _tTotal.add(amount);
+        _rOwned[account] = _rOwned[account].add(amount);
+        emit Transfer(address(0), account, amount);
+    }
+
+    function _approve(address owner, address spender, uint256 amount) private {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -565,13 +663,11 @@ contract WealthInu is Context, IERC20, Ownable {
         emit Approval(owner, spender, amount);
     }
 
-    function _transfer(address sender, address recipient, uint256 amount) public {
+    function _transfer(address sender, address recipient, uint256 amount) private {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
-        if(sender != owner() && recipient != owner())
-          require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
-            
+        
         if (_isExcluded[sender] && !_isExcluded[recipient]) {
             _transferFromExcluded(sender, recipient, amount);
         } else if (!_isExcluded[sender] && _isExcluded[recipient]) {
@@ -585,73 +681,112 @@ contract WealthInu is Context, IERC20, Ownable {
         }
     }
 
-    function _transferStandard(address sender, address recipient, uint256 tAmount) public {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);       
-        _reflectFee(rFee, tFee);
-        emit Transfer(sender, recipient, tTransferAmount);
-    }
-
-    function _transferToExcluded(address sender, address recipient, uint256 tAmount) public {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);           
-        _reflectFee(rFee, tFee);
-        emit Transfer(sender, recipient, tTransferAmount);
-    }
-
-    function _transferFromExcluded(address sender, address recipient, uint256 tAmount) public {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount);
-        _tOwned[sender] = _tOwned[sender].sub(tAmount);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);   
-        _reflectFee(rFee, tFee);
-        emit Transfer(sender, recipient, tTransferAmount);
-    }
-
-    function _transferBothExcluded(address sender, address recipient, uint256 tAmount) public {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount);
-        _tOwned[sender] = _tOwned[sender].sub(tAmount);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);        
-        _reflectFee(rFee, tFee);
-        emit Transfer(sender, recipient, tTransferAmount);
-    }
-
-    function _reflectFee(uint256 rFee, uint256 tFee) public {
-        _rTotal = _rTotal.sub(rFee);
-        _tFeeTotal = _tFeeTotal.add(tFee);
-    }
-
-    function _getValues(uint256 tAmount) public view returns (uint256, uint256, uint256, uint256, uint256) {
-        (uint256 tTransferAmount, uint256 tFee) = _getTValues(tAmount);
+    function _transferStandard(address sender, address recipient, uint256 tAmount) private {
         uint256 currentRate =  _getRate();
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) = _getRValues(tAmount, tFee, currentRate);
-        return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tBurn) = _getValues(tAmount);
+        uint256 rBurn =  tBurn.mul(currentRate);
+        _standardTransferContent(sender, recipient, rAmount, rTransferAmount);
+        _reflectFee(rFee, rBurn, tFee, tBurn);
+        emit Transfer(sender, recipient, tTransferAmount);
     }
 
-    function _getTValues(uint256 tAmount) public pure returns (uint256, uint256) {
-        uint256 tFee = tAmount.div(100).mul(2);
-        uint256 tTransferAmount = tAmount.sub(tFee);
-        return (tTransferAmount, tFee);
+    function _standardTransferContent(address sender, address recipient, uint256 rAmount, uint256 rTransferAmount) private {
+        _rOwned[sender] = _rOwned[sender].sub(rAmount);
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
     }
 
-    function _getRValues(uint256 tAmount, uint256 tFee, uint256 currentRate) public pure returns (uint256, uint256, uint256) {
+    function _transferToExcluded(address sender, address recipient, uint256 tAmount) private {
+        uint256 currentRate =  _getRate();
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tBurn) = _getValues(tAmount);
+        uint256 rBurn =  tBurn.mul(currentRate);
+        _excludedFromTransferContent(sender, recipient, tTransferAmount, rAmount, rTransferAmount);
+        _reflectFee(rFee, rBurn, tFee, tBurn);
+        emit Transfer(sender, recipient, tTransferAmount);
+    }
+    
+    function _excludedFromTransferContent(address sender, address recipient, uint256 tTransferAmount, uint256 rAmount, uint256 rTransferAmount) private {
+        _rOwned[sender] = _rOwned[sender].sub(rAmount);
+        _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);    
+    }
+    
+
+    function _transferFromExcluded(address sender, address recipient, uint256 tAmount) private {
+        uint256 currentRate =  _getRate();
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tBurn) = _getValues(tAmount);
+        uint256 rBurn =  tBurn.mul(currentRate);
+        _excludedToTransferContent(sender, recipient, tAmount, rAmount, rTransferAmount);
+        _reflectFee(rFee, rBurn, tFee, tBurn);
+        emit Transfer(sender, recipient, tTransferAmount);
+    }
+    
+    function _excludedToTransferContent(address sender, address recipient, uint256 tAmount, uint256 rAmount, uint256 rTransferAmount) private {
+        _tOwned[sender] = _tOwned[sender].sub(tAmount);
+        _rOwned[sender] = _rOwned[sender].sub(rAmount);
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);  
+    }
+
+    function _transferBothExcluded(address sender, address recipient, uint256 tAmount) private {
+        uint256 currentRate =  _getRate();
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tBurn) = _getValues(tAmount);
+        uint256 rBurn =  tBurn.mul(currentRate);  
+        _bothTransferContent(sender, recipient, tAmount, rAmount, tTransferAmount, rTransferAmount);
+        _reflectFee(rFee, rBurn, tFee, tBurn);
+        emit Transfer(sender, recipient, tTransferAmount);
+    }
+    
+    function _bothTransferContent(address sender, address recipient, uint256 tAmount, uint256 rAmount, uint256 tTransferAmount, uint256 rTransferAmount) private {
+        _tOwned[sender] = _tOwned[sender].sub(tAmount);
+        _rOwned[sender] = _rOwned[sender].sub(rAmount);
+        _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);  
+    }
+
+    function _reflectFee(uint256 rFee, uint256 rBurn, uint256 tFee, uint256 tBurn) public {
+        _rTotal = _rTotal.sub(rFee).sub(rBurn);
+        _tFeeTotal = _tFeeTotal.add(tFee);
+        _tBurnTotal = _tBurnTotal.add(tBurn);
+        _tTotal = _tTotal.sub(tBurn);
+		emit Transfer(address(this), address(0), tBurn);
+    }
+
+    function _getValues(uint256 tAmount) private view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
+        (uint256 tFee, uint256 tBurn) = _getTBasics(tAmount, _TAX_FEE, _BURN_FEE);
+        uint256 tTransferAmount = getTTransferAmount(tAmount, tFee, tBurn);
+        uint256 currentRate =  _getRate();
+        (uint256 rAmount, uint256 rFee) = _getRBasics(tAmount, tFee, currentRate);
+        uint256 rTransferAmount = _getRTransferAmount(rAmount, rFee, tBurn, currentRate);
+        return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee, tBurn);
+    }
+
+    function _getTBasics(uint256 tAmount, uint256 taxFee, uint256 burnFee) private view returns (uint256, uint256) {
+        uint256 tFee = ((tAmount.mul(taxFee)).div(_GRANULARITY)).div(100);
+        uint256 tBurn = ((tAmount.mul(burnFee)).div(_GRANULARITY)).div(100);
+        return (tFee, tBurn);
+    }
+
+    function getTTransferAmount(uint256 tAmount, uint256 tFee, uint256 tBurn) private pure returns (uint256) {
+        return tAmount.sub(tFee).sub(tBurn);
+    }
+    
+    function _getRBasics(uint256 tAmount, uint256 tFee, uint256 currentRate) private pure returns (uint256, uint256) {
         uint256 rAmount = tAmount.mul(currentRate);
         uint256 rFee = tFee.mul(currentRate);
-        uint256 rTransferAmount = rAmount.sub(rFee);
-        return (rAmount, rTransferAmount, rFee);
+        return (rAmount, rFee);
+    }
+    
+    function _getRTransferAmount(uint256 rAmount, uint256 rFee, uint256 tBurn, uint256 currentRate) private pure returns (uint256) {
+        uint256 rBurn = tBurn.mul(currentRate);
+        uint256 rTransferAmount = rAmount.sub(rFee).sub(rBurn);
+        return rTransferAmount;
     }
 
-    function _getRate() public view returns(uint256) {
+    function _getRate() private view returns(uint256) {
         (uint256 rSupply, uint256 tSupply) = _getCurrentSupply();
         return rSupply.div(tSupply);
     }
 
-    function _getCurrentSupply() public view returns(uint256, uint256) {
+    function _getCurrentSupply() private view returns(uint256, uint256) {
         uint256 rSupply = _rTotal;
         uint256 tSupply = _tTotal;      
         for (uint256 i = 0; i < _excluded.length; i++) {
@@ -661,5 +796,9 @@ contract WealthInu is Context, IERC20, Ownable {
         }
         if (rSupply < _rTotal.div(_tTotal)) return (_rTotal, _tTotal);
         return (rSupply, tSupply);
+    }
+
+    function _getTaxFee() private view returns(uint256) {
+        return _TAX_FEE;
     }
 }
