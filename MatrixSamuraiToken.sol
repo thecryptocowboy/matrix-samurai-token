@@ -495,25 +495,25 @@ contract TestCoin is Context, IERC20, Ownable {
     uint256 public _TAX_FEE;
     uint256 public _BURN_FEE;
 
-    // Track original fees to bypass fees for excluded accounts (not currently implemented)
+    // Track original fees to bypass fees for excluded accounts
     uint256 public ORIG_TAX_FEE;
     uint256 public ORIG_BURN_FEE;
 
     uint256 public _SUPPLY;
 
     constructor () {
-        _NAME = "TestCoin";
-        _SYMBOL = "TestCoin";
+        _NAME = "TestCoin v1.2.13";
+        _SYMBOL = "TCv1.2.13";
         _SUPPLY = 1000000;
         _DECIMALS = 9;
         _DECIMALFACTOR = 10 ** uint256(_DECIMALS);
         _tTotal = _SUPPLY * _DECIMALFACTOR;
         _rTotal = (_MAX - (_MAX % _tTotal));
-        _TAX_FEE = 5 * 100;
-        _BURN_FEE = 5 * 100;
+        _TAX_FEE = 3 * 100;
+        _BURN_FEE = 3 * 100;
         ORIG_TAX_FEE = _TAX_FEE;
-        ORIG_BURN_FEE = _BURN_FEE; 
-        _owner = 0x0000; // TODO: Replace with owner address.
+        ORIG_BURN_FEE = _BURN_FEE;
+        _owner = 0xbfa7C573974fB28Fa955699a810b015D71B729f6; // TODO: Replace with owner address.
         _rOwned[_msgSender()] = _rTotal; // TODO: Consider _rOwned[tokenOwner] = _rTotal;
         emit Transfer(address(0), _msgSender(), _tTotal);
     }
@@ -648,7 +648,6 @@ contract TestCoin is Context, IERC20, Ownable {
 	}
 
     function mint(address account, uint256 amount) onlyOwner() public {
-
         _tTotal = _tTotal.add(amount);
         _rOwned[account] = _rOwned[account].add(amount);
         emit Transfer(address(0), account, amount);
@@ -666,6 +665,14 @@ contract TestCoin is Context, IERC20, Ownable {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
+
+        // Remove fees for transfers from excluded account & token owner.
+        bool takeFee = true;
+        if (_isExcluded[sender] || sender == _owner) {
+            takeFee = false;
+        }
+
+        if (!takeFee) removeAllFee();
         
         if (_isExcluded[sender] && !_isExcluded[recipient]) {
             _transferFromExcluded(sender, recipient, amount);
@@ -678,6 +685,9 @@ contract TestCoin is Context, IERC20, Ownable {
         } else {
             _transferStandard(sender, recipient, amount);
         }
+        
+        if (!takeFee) restoreAllFee();
+
     }
 
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
@@ -799,5 +809,19 @@ contract TestCoin is Context, IERC20, Ownable {
 
     function _getTaxFee() private view returns(uint256) {
         return _TAX_FEE;
+    }
+    function removeAllFee() private {
+        if(_TAX_FEE == 0 && _BURN_FEE == 0) return;
+        
+        ORIG_TAX_FEE = _TAX_FEE;
+        ORIG_BURN_FEE = _BURN_FEE;
+        
+        _TAX_FEE = 0;
+        _BURN_FEE = 0;
+    }
+    
+    function restoreAllFee() private {
+        _TAX_FEE = ORIG_TAX_FEE;
+        _BURN_FEE = ORIG_BURN_FEE;
     }
 }
