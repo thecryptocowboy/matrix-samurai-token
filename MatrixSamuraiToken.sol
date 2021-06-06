@@ -19,7 +19,6 @@
                            
 pragma solidity ^0.8.2;
 
-
 abstract contract Context {
     function _msgSender() internal view virtual returns (address payable) {
         return payable(msg.sender);
@@ -463,8 +462,6 @@ contract Ownable is Context {
     }
 }
 
-
-
 contract MatrixSamuraiToken is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
@@ -477,6 +474,7 @@ contract MatrixSamuraiToken is Context, IERC20, Ownable {
     address[] private _excluded;
 
     uint256 private _MAX = ~uint256(0);
+    uint256 private _DECIMALS = 9;
     uint256 private _DECIMALFACTOR = 10 ** uint256(_DECIMALS);
     uint256 private _GRANULARITY = 100;
     uint256 private _SUPPLY = 1000000000;
@@ -486,7 +484,6 @@ contract MatrixSamuraiToken is Context, IERC20, Ownable {
     uint256 private _tBurnTotal;
     string private _NAME = "Matrix Samurai Token";
     string private _SYMBOL = "MXS";
-    uint256 private _DECIMALS = 9;
     uint256 public _TAX_FEE = 3 * 100;
     uint256 public _BURN_FEE = 3 * 100;
     uint256 private ORIG_TAX_FEE = _TAX_FEE;
