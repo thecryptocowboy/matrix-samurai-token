@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: MIT
 
-//  _____ ______   ________  _________  ________  ___     ___    ___         
-// |\   _ \  _   \|\   __  \|\___   ___\\   __  \|\  \   |\  \  /  /|        
-// \ \  \\\__\ \  \ \  \|\  \|___ \  \_\ \  \|\  \ \  \  \ \  \/  / /        
-//  \ \  \\|__| \  \ \   __  \   \ \  \ \ \   _  _\ \  \  \ \    / /         
-//   \ \  \    \ \  \ \  \ \  \   \ \  \ \ \  \\  \\ \  \  /     \/          
-//    \ \__\    \ \__\ \__\ \__\   \ \__\ \ \__\\ _\\ \__\/  /\   \          
-//     \|__|     \|__|\|__|\|__|    \|__|  \|__|\|__|\|__/__/ /\ __\         
-//                                                       |__|/ \|__|         
-                                                                          
-                                                                          
-//  ________  ________  _____ ______   ___  ___  ________  ________  ___     
-// |\   ____\|\   __  \|\   _ \  _   \|\  \|\  \|\   __  \|\   __  \|\  \    
-// \ \  \___|\ \  \|\  \ \  \\\__\ \  \ \  \\\  \ \  \|\  \ \  \|\  \ \  \   
-//  \ \_____  \ \   __  \ \  \\|__| \  \ \  \\\  \ \   _  _\ \   __  \ \  \  
-//   \|____|\  \ \  \ \  \ \  \    \ \  \ \  \\\  \ \  \\  \\ \  \ \  \ \  \ 
+//  _____ ______   ________  _________  ________  ___     ___    ___
+// |\   _ \  _   \|\   __  \|\___   ___\\   __  \|\  \   |\  \  /  /|
+// \ \  \\\__\ \  \ \  \|\  \|___ \  \_\ \  \|\  \ \  \  \ \  \/  / /
+//  \ \  \\|__| \  \ \   __  \   \ \  \ \ \   _  _\ \  \  \ \    / /
+//   \ \  \    \ \  \ \  \ \  \   \ \  \ \ \  \\  \\ \  \  /     \/
+//    \ \__\    \ \__\ \__\ \__\   \ \__\ \ \__\\ _\\ \__\/  /\   \
+//     \|__|     \|__|\|__|\|__|    \|__|  \|__|\|__|\|__/__/ /\ __\
+//                                                       |__|/ \|__|                                                        
+//  ________  ________  _____ ______   ___  ___  ________  ________  ___
+// |\   ____\|\   __  \|\   _ \  _   \|\  \|\  \|\   __  \|\   __  \|\  \
+// \ \  \___|\ \  \|\  \ \  \\\__\ \  \ \  \\\  \ \  \|\  \ \  \|\  \ \  \
+//  \ \_____  \ \   __  \ \  \\|__| \  \ \  \\\  \ \   _  _\ \   __  \ \  \
+//   \|____|\  \ \  \ \  \ \  \    \ \  \ \  \\\  \ \  \\  \\ \  \ \  \ \  \
 //     ____\_\  \ \__\ \__\ \__\    \ \__\ \_______\ \__\\ _\\ \__\ \__\ \__\
 //    |\_________\|__|\|__|\|__|     \|__|\|_______|\|__|\|__|\|__|\|__|\|__|
-//    \|_________|                                                           
+//    \|_________|
                            
 pragma solidity ^0.8.2;
 
@@ -467,54 +465,35 @@ contract Ownable is Context {
 
 
 
-contract TestCoin is Context, IERC20, Ownable {
+contract MatrixSamuraiToken is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
 
-    mapping (address => uint256) public _rOwned;
-    mapping (address => uint256) public _tOwned;
-    mapping (address => mapping (address => uint256)) public _allowances;
+    mapping (address => uint256) private _rOwned;
+    mapping (address => uint256) private _tOwned;
+    mapping (address => mapping (address => uint256)) private _allowances;
 
-    mapping (address => bool) public _isExcluded;
-    address[] public _excluded;
+    mapping (address => bool) private _isExcluded;
+    address[] private _excluded;
 
-    string public _NAME;
-    string public _SYMBOL;
-    uint256 public _DECIMALS;
-
-    uint256 public _MAX = ~uint256(0);
-    uint256 public _DECIMALFACTOR;
-    uint256 public _GRANULARITY = 100;
-
-    uint256 public _tTotal;
-    uint256 public _rTotal;
-
-    uint256 public _tFeeTotal;
-    uint256 public _tBurnTotal;
-
-    uint256 public _TAX_FEE;
-    uint256 public _BURN_FEE;
-
-    // Track original fees to bypass fees for excluded accounts
-    uint256 public ORIG_TAX_FEE;
-    uint256 public ORIG_BURN_FEE;
-
-    uint256 public _SUPPLY;
+    uint256 private _MAX = ~uint256(0);
+    uint256 private _DECIMALFACTOR = 10 ** uint256(_DECIMALS);
+    uint256 private _GRANULARITY = 100;
+    uint256 private _SUPPLY = 1000000000;
+    uint256 private _tTotal = _SUPPLY * _DECIMALFACTOR;
+    uint256 private _rTotal = (_MAX - (_MAX % _tTotal));
+    uint256 private _tFeeTotal;
+    uint256 private _tBurnTotal;
+    string private _NAME = "Matrix Samurai Token";
+    string private _SYMBOL = "MXS";
+    uint256 private _DECIMALS = 9;
+    uint256 public _TAX_FEE = 3 * 100;
+    uint256 public _BURN_FEE = 3 * 100;
+    uint256 private ORIG_TAX_FEE = _TAX_FEE;
+    uint256 private ORIG_BURN_FEE = _BURN_FEE;
 
     constructor () {
-        _NAME = "TestCoin v1.2.13";
-        _SYMBOL = "TCv1.2.13";
-        _SUPPLY = 1000000;
-        _DECIMALS = 9;
-        _DECIMALFACTOR = 10 ** uint256(_DECIMALS);
-        _tTotal = _SUPPLY * _DECIMALFACTOR;
-        _rTotal = (_MAX - (_MAX % _tTotal));
-        _TAX_FEE = 3 * 100;
-        _BURN_FEE = 3 * 100;
-        ORIG_TAX_FEE = _TAX_FEE;
-        ORIG_BURN_FEE = _BURN_FEE;
-        _owner = 0xbfa7C573974fB28Fa955699a810b015D71B729f6; // TODO: Replace with owner address.
-        _rOwned[_msgSender()] = _rTotal; // TODO: Consider _rOwned[tokenOwner] = _rTotal;
+        _rOwned[_msgSender()] = _rTotal;
         emit Transfer(address(0), _msgSender(), _tTotal);
     }
 
@@ -647,16 +626,9 @@ contract TestCoin is Context, IERC20, Ownable {
 		emit Transfer(_who, address(0), _value);
 	}
 
-    function mint(address account, uint256 amount) onlyOwner() public {
-        _tTotal = _tTotal.add(amount);
-        _rOwned[account] = _rOwned[account].add(amount);
-        emit Transfer(address(0), account, amount);
-    }
-
     function _approve(address owner, address spender, uint256 amount) private {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
-
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
@@ -673,7 +645,6 @@ contract TestCoin is Context, IERC20, Ownable {
         }
 
         if (!takeFee) removeAllFee();
-        
         if (_isExcluded[sender] && !_isExcluded[recipient]) {
             _transferFromExcluded(sender, recipient, amount);
         } else if (!_isExcluded[sender] && _isExcluded[recipient]) {
@@ -685,9 +656,7 @@ contract TestCoin is Context, IERC20, Ownable {
         } else {
             _transferStandard(sender, recipient, amount);
         }
-        
         if (!takeFee) restoreAllFee();
-
     }
 
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
@@ -719,7 +688,6 @@ contract TestCoin is Context, IERC20, Ownable {
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);    
     }
     
-
     function _transferFromExcluded(address sender, address recipient, uint256 tAmount) private {
         uint256 currentRate =  _getRate();
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tBurn) = _getValues(tAmount);
@@ -743,7 +711,7 @@ contract TestCoin is Context, IERC20, Ownable {
         _reflectFee(rFee, rBurn, tFee, tBurn);
         emit Transfer(sender, recipient, tTransferAmount);
     }
-    
+
     function _bothTransferContent(address sender, address recipient, uint256 tAmount, uint256 rAmount, uint256 tTransferAmount, uint256 rTransferAmount) private {
         _tOwned[sender] = _tOwned[sender].sub(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
@@ -777,13 +745,13 @@ contract TestCoin is Context, IERC20, Ownable {
     function getTTransferAmount(uint256 tAmount, uint256 tFee, uint256 tBurn) private pure returns (uint256) {
         return tAmount.sub(tFee).sub(tBurn);
     }
-    
+
     function _getRBasics(uint256 tAmount, uint256 tFee, uint256 currentRate) private pure returns (uint256, uint256) {
         uint256 rAmount = tAmount.mul(currentRate);
         uint256 rFee = tFee.mul(currentRate);
         return (rAmount, rFee);
     }
-    
+
     function _getRTransferAmount(uint256 rAmount, uint256 rFee, uint256 tBurn, uint256 currentRate) private pure returns (uint256) {
         uint256 rBurn = tBurn.mul(currentRate);
         uint256 rTransferAmount = rAmount.sub(rFee).sub(rBurn);
@@ -810,18 +778,18 @@ contract TestCoin is Context, IERC20, Ownable {
     function _getTaxFee() private view returns(uint256) {
         return _TAX_FEE;
     }
+
     function removeAllFee() private {
         if(_TAX_FEE == 0 && _BURN_FEE == 0) return;
-        
         ORIG_TAX_FEE = _TAX_FEE;
         ORIG_BURN_FEE = _BURN_FEE;
-        
         _TAX_FEE = 0;
         _BURN_FEE = 0;
     }
-    
+
     function restoreAllFee() private {
         _TAX_FEE = ORIG_TAX_FEE;
         _BURN_FEE = ORIG_BURN_FEE;
     }
+
 }
