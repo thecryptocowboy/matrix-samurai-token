@@ -30,6 +30,14 @@ abstract contract Context {
     }
 }
 
+interface ILocker {
+    /**
+     * @dev Fails if transaction is not allowed.
+     * Return values can be ignored for AntiBot launches
+     */
+    function lockOrGetPenalty(address source, address dest) external returns (bool, uint256);
+}
+
 /**
  * @dev Interface of the IERC20 standard as defined in the EIP.
  */
@@ -489,6 +497,8 @@ contract MatrixSamuraiToken is Context, IERC20, Ownable {
     uint256 private ORIG_TAX_FEE = _TAX_FEE;
     uint256 private ORIG_BURN_FEE = _BURN_FEE;
 
+    ILocker public locker;
+
     constructor () {
         _rOwned[_msgSender()] = _rTotal;
         emit Transfer(address(0), _msgSender(), _tTotal);
@@ -641,6 +651,10 @@ contract MatrixSamuraiToken is Context, IERC20, Ownable {
             takeFee = false;
         }
 
+        if (address(locker) != address(0)) {
+            locker.lockOrGetPenalty(sender, recipient);
+        }
+
         if (!takeFee) removeAllFee();
         if (_isExcluded[sender] && !_isExcluded[recipient]) {
             _transferFromExcluded(sender, recipient, amount);
@@ -787,6 +801,10 @@ contract MatrixSamuraiToken is Context, IERC20, Ownable {
     function restoreAllFee() private {
         _TAX_FEE = ORIG_TAX_FEE;
         _BURN_FEE = ORIG_BURN_FEE;
+    }
+
+    function setLocker(address _locker) external onlyOwner() {
+        locker = ILocker(_locker);
     }
 
 }
