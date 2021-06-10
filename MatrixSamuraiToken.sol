@@ -626,12 +626,17 @@ contract MatrixSamuraiToken is Context, IERC20, Ownable {
 		ORIG_BURN_FEE = _BURN_FEE;
 	}
 
-	function _burn(address _who, uint256 _value) internal {
-		require(_value <= _rOwned[_who]);
-		_rOwned[_who] = _rOwned[_who].sub(_value);
-		_tTotal = _tTotal.sub(_value);
-		emit Transfer(_who, address(0), _value);
-	}
+    function _burn(address _who, uint256 _value) internal {
+        uint256 rValue = _value * _getRate();
+        require(rValue <= _rOwned[_who]);
+        _rOwned[_who] = _rOwned[_who].sub(_value);
+        _rTotal = _rTotal.sub(rValue);
+        _tTotal = _tTotal.sub(_value);
+        if (_isExcluded[_who]) {
+            _tOwned[_who] = _tOwned[_who].sub(_value);
+        }
+        emit Transfer(_who, address(0), _value);
+    }
 
     function _approve(address owner, address spender, uint256 amount) private {
         require(owner != address(0), "ERC20: approve from the zero address");
@@ -656,6 +661,7 @@ contract MatrixSamuraiToken is Context, IERC20, Ownable {
         }
 
         if (!takeFee) removeAllFee();
+
         if (_isExcluded[sender] && !_isExcluded[recipient]) {
             _transferFromExcluded(sender, recipient, amount);
         } else if (!_isExcluded[sender] && _isExcluded[recipient]) {
@@ -667,6 +673,7 @@ contract MatrixSamuraiToken is Context, IERC20, Ownable {
         } else {
             _transferStandard(sender, recipient, amount);
         }
+
         if (!takeFee) restoreAllFee();
     }
 
