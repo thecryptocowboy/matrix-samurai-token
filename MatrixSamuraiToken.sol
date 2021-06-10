@@ -482,7 +482,7 @@ contract MatrixSamuraiToken is Context, IERC20, Ownable {
     address[] private _excluded;
 
     uint256 private _MAX = ~uint256(0);
-    uint256 private _DECIMALS = 9;
+    uint256 private _DECIMALS = 18;
     uint256 private _DECIMALFACTOR = 10 ** uint256(_DECIMALS);
     uint256 private _GRANULARITY = 100;
     uint256 private _SUPPLY = 1000000000;
